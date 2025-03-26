@@ -90,7 +90,7 @@ python main.py
 
 ## Database Schema
 
-The application uses two tables:
+The application uses three tables:
 
 1. `wallets_to_monitor` - Stores the Solana wallet addresses to monitor:
 ```sql
@@ -100,7 +100,7 @@ CREATE TABLE wallets_to_monitor (
 );
 ```
 
-2. `token_entity` - Stores token data:
+2. `token_entity` - Stores token metadata:
 ```sql
 CREATE TABLE token_entity (
     token_id VARCHAR(255) PRIMARY KEY,
@@ -108,6 +108,20 @@ CREATE TABLE token_entity (
     symbol VARCHAR(50) NOT NULL,
     price NUMERIC(30, 10) NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+3. `token_accounts` - Links wallets to their tokens and stores balance information:
+```sql
+CREATE TABLE token_accounts (
+    token_id SERIAL PRIMARY KEY,
+    wallet_address TEXT NOT NULL,
+    token_mint VARCHAR(255) NOT NULL,
+    balance BIGINT NOT NULL,
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    symbol TEXT,
+    decimals INTEGER,
+    UNIQUE(wallet_address, token_mint)
 );
 ```
 
@@ -129,6 +143,7 @@ wallet-monitoring/
     ├── models/          # Data models
     │   ├── __init__.py
     │   ├── token_entity.py  # Token entity database operations
+    │   ├── token_account.py # Token account linking wallets to tokens
     │   └── wallet_manager.py # Wallet manager for retrieving wallets
     └── solana/          # Solana blockchain integration
         ├── __init__.py
