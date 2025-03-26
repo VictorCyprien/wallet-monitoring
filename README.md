@@ -3,13 +3,14 @@
 A simplified Python-based clone of the Insider-Monitor tool that:
 
 1. Connects to PostgreSQL database
-2. Retrieves tokens from a Solana wallet using the Solana Mainnet Beta RPC
-3. Checks if tokens exist in the database
-4. Fetches and saves token data from Dexscreener
+2. Retrieves wallets to monitor from database
+3. Retrieves tokens from Solana wallets using the Solana Mainnet Beta RPC
+4. Checks if tokens exist in the database
+5. Fetches and saves token data from Dexscreener
 
 ## Features
 
-- 🔍 Fetch all tokens from a Solana wallet address
+- 🔍 Fetch all tokens from Solana wallet addresses stored in database
 - 💾 Store token data in PostgreSQL database
 - 📊 Retrieve token info from Dexscreener API
 - 🔄 Update token data when changes are detected
@@ -56,9 +57,6 @@ DB_PASSWORD=postgres
 # Solana Configuration
 SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
 SOLANA_RPC_TIMEOUT=30
-
-# Default wallet to monitor (optional)
-SOLANA_WALLET_ADDRESS=your_wallet_address_here
 ```
 
 ## Database Setup
@@ -68,24 +66,41 @@ SOLANA_WALLET_ADDRESS=your_wallet_address_here
 CREATE DATABASE wallet_monitor;
 ```
 
-2. The application will automatically create the necessary tables when run
+2. Create a table to store wallet addresses:
+```sql
+CREATE TABLE wallets_to_monitor (
+    wallet_address TEXT PRIMARY KEY,
+    added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+3. Add wallet addresses to monitor:
+```sql
+INSERT INTO wallets_to_monitor (wallet_address) VALUES ('YOUR_SOLANA_WALLET_ADDRESS');
+```
+
+4. The application will automatically create the token_entity table when run.
 
 ## Usage
 
-Run the application with a specific wallet address:
-```bash
-python main.py --wallet YOUR_SOLANA_WALLET_ADDRESS
-```
-
-Or, if you've set the default wallet in the `.env` file:
+Run the application to process all wallets in the database:
 ```bash
 python main.py
 ```
 
 ## Database Schema
 
-The application creates a single table called `token_entity` with the following schema:
+The application uses two tables:
 
+1. `wallets_to_monitor` - Stores the Solana wallet addresses to monitor:
+```sql
+CREATE TABLE wallets_to_monitor (
+    wallet_address TEXT PRIMARY KEY,
+    added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+2. `token_entity` - Stores token data:
 ```sql
 CREATE TABLE token_entity (
     token_id VARCHAR(255) PRIMARY KEY,
@@ -113,7 +128,8 @@ wallet-monitoring/
     │   └── api.py       # Dexscreener API client
     ├── models/          # Data models
     │   ├── __init__.py
-    │   └── token_entity.py  # Token entity database operations
+    │   ├── token_entity.py  # Token entity database operations
+    │   └── wallet_manager.py # Wallet manager for retrieving wallets
     └── solana/          # Solana blockchain integration
         ├── __init__.py
         └── wallet.py    # Solana wallet operations
