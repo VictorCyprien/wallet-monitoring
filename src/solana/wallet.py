@@ -83,9 +83,15 @@ class SolanaWallet:
                     if not token_id:
                         continue
                     
+                    # Get token amount and decimals
+                    token_amount = token_data.get('tokenAmount', {})
+                    ui_amount = token_amount.get('uiAmount', 0)
+                    decimals = token_amount.get('decimals', 0)
+                    
                     tokens.append({
                         'token_id': token_id,
-                        'amount': token_data.get('tokenAmount', {}).get('uiAmount', 0)
+                        'amount': ui_amount,
+                        'decimals': decimals
                     })
                 except (KeyError, ValueError) as e:
                     logger.warning(f"Error parsing token account data: {e}")
