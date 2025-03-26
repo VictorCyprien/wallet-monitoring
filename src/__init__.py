@@ -1,0 +1,3 @@
+"""
+Solana Wallet Monitor package.
+""" 
