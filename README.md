@@ -7,6 +7,8 @@ A simplified Python-based clone of the Insider-Monitor tool that:
 3. Retrieves tokens from Solana wallets using the Solana Mainnet Beta RPC
 4. Checks if tokens exist in the database
 5. Fetches and saves token data from Dexscreener
+6. Maintains token account relationships between wallets and tokens
+7. Automatically removes tokens that are no longer in wallets
 
 ## Features
 
@@ -14,6 +16,9 @@ A simplified Python-based clone of the Insider-Monitor tool that:
 - 💾 Store token data in PostgreSQL database
 - 📊 Retrieve token info from Dexscreener API
 - 🔄 Update token data when changes are detected
+- 🔁 Built-in retry mechanism for Solana RPC with configurable delay
+- 🧹 Automatic cleanup of tokens no longer present in wallets
+- 🔗 Maintains relationships between wallets and their tokens
 
 ## Requirements
 
@@ -57,6 +62,8 @@ DB_PASSWORD=postgres
 # Solana Configuration
 SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
 SOLANA_RPC_TIMEOUT=30
+SOLANA_RETRY_LIMIT=3
+SOLANA_RETRY_DELAY=5
 ```
 
 ## Database Setup
@@ -153,3 +160,25 @@ wallet-monitoring/
 ## License
 
 MIT 
+
+## How It Works
+
+1. **Wallet Discovery**: The application reads wallet addresses from the `wallets_to_monitor` table in the database.
+
+2. **Token Retrieval**: For each wallet, it retrieves all token accounts using Solana RPC calls with automatic retry on failures.
+
+3. **Token Metadata**: For tokens not yet in the database, it fetches metadata (name, symbol, price) from Dexscreener.
+
+4. **Data Storage**:
+   - Token metadata is stored in the `token_entity` table
+   - Wallet-token relationships and balances are stored in `token_accounts` table
+   - If a token exists, its data is updated rather than duplicated
+
+5. **Token Cleanup**: After processing each wallet, it automatically removes token accounts that are no longer present in the wallet.
+
+## Key Implementation Details
+
+- **Retry Mechanism**: Solana RPC calls automatically retry up to 3 times with a 5-second delay between attempts
+- **Duplicate Prevention**: The `token_accounts` table has a unique constraint on `(wallet_address, token_mint)` to prevent duplicates
+- **Foreign Keys**: Token accounts reference token entities to maintain data integrity
+- **UPSERT Operations**: Token accounts are updated if they exist or inserted if they don't 
