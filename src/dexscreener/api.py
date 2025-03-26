@@ -8,7 +8,9 @@ from typing import Dict, Any, Optional
 import requests
 from requests.exceptions import RequestException
 
-logger = logging.getLogger(__name__)
+from src.logger.logger import Logger
+
+logger = Logger()
 
 class DexscreenerAPI:
     """
@@ -17,10 +19,10 @@ class DexscreenerAPI:
     
     def __init__(self):
         """Initialize Dexscreener API client."""
-        self.base_url = "https://api.dexscreener.com/latest/dex"
+        self.base_url = "https://api.dexscreener.com"
         self.timeout = 30
         self.retry_limit = 3
-        self.retry_delay = 2  # seconds
+        self.retry_delay = 5  # seconds
         
         logger.info("Initialized Dexscreener API client")
     
@@ -39,7 +41,7 @@ class DexscreenerAPI:
             tries += 1
             try:
                 # Build URL for token search
-                url = f"{self.base_url}/search?q={token_id}"
+                url = f"{self.base_url}/tokens/v1/solana/{token_id}"
                 
                 # Make request to Dexscreener API
                 response = requests.get(url, timeout=self.timeout)
@@ -48,37 +50,50 @@ class DexscreenerAPI:
                 # Parse response
                 data = response.json()
                 
-                # Extract token information from the response
-                pairs = data.get('pairs', [])
-                if not pairs:
+                # The response is an array of pairs
+                pairs = data
+                if not pairs or len(pairs) == 0:
                     logger.warning(f"No token data found for {token_id}")
                     return None
                 
-                # Use the first pair that matches our token
+                # Find the token in either baseToken or quoteToken
                 for pair in pairs:
-                    if pair.get('chainId') == 'solana' and (
-                        pair.get('baseToken', {}).get('address') == token_id or 
-                        pair.get('quoteToken', {}).get('address') == token_id
-                    ):
-                        # Determine which token in the pair is our target
-                        if pair.get('baseToken', {}).get('address') == token_id:
-                            token_info = pair.get('baseToken', {})
-                        else:
-                            token_info = pair.get('quoteToken', {})
-                        
+                    base_token = pair.get('baseToken', {})
+                    quote_token = pair.get('quoteToken', {})
+                    
+                    # Check if our token is the base token
+                    if base_token.get('address') == token_id:
                         # Format token data for storage
+                        price_usd = pair.get('priceUsd', 0)
                         token_data = {
                             'token_id': token_id,
-                            'name': token_info.get('name', 'Unknown'),
-                            'symbol': token_info.get('symbol', 'UNKNOWN'),
-                            'price': float(token_info.get('price', 0))
+                            'name': base_token.get('name', 'Unknown'),
+                            'symbol': base_token.get('symbol', 'UNKNOWN'),
+                            'price': float(price_usd) if price_usd else 0
+                        }
+                        
+                        logger.info(f"Retrieved data for token {token_data['name']} ({token_data['symbol']})")
+                        return token_data
+                    
+                    # Check if our token is the quote token
+                    elif quote_token.get('address') == token_id:
+                        # For quote tokens, we may need to calculate the price differently
+                        # or use the priceUsd directly if available
+                        price_usd = pair.get('priceUsd', 0)
+                        token_data = {
+                            'token_id': token_id,
+                            'name': quote_token.get('name', 'Unknown'),
+                            'symbol': quote_token.get('symbol', 'UNKNOWN'),
+                            'price': float(price_usd) if price_usd else 0
                         }
                         
                         logger.info(f"Retrieved data for token {token_data['name']} ({token_data['symbol']})")
                         return token_data
                 
-                # If we reach here, no matching token was found
-                logger.warning(f"Token {token_id} found on Dexscreener but no matching Solana token")
+                # If we reach here, the token was found in the API but :
+                # Either the token is not listed on Dexscreener
+                # Or the token is "inactive"
+                logger.warning(f"Token {token_id} found on Dexscreener but in an unrecognized format")
                 return None
                 
             except RequestException as e:
