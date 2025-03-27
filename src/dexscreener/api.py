@@ -2,7 +2,7 @@
 Dexscreener API module for retrieving token information.
 """
 
-import logging
+import os
 import time
 from typing import Dict, Any, Optional
 import requests
@@ -21,8 +21,8 @@ class DexscreenerAPI:
         """Initialize Dexscreener API client."""
         self.base_url = "https://api.dexscreener.com"
         self.timeout = 30
-        self.retry_limit = 3
-        self.retry_delay = 5  # seconds
+        self.retry_limit = int(os.getenv('DEXSCREENER_RETRY_LIMIT', 3))
+        self.retry_delay = int(os.getenv('DEXSCREENER_RETRY_DELAY', 5))  # seconds
         
         logger.info("Initialized Dexscreener API client")
     
