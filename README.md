@@ -100,6 +100,43 @@ Run the application to process all wallets in the database:
 python main.py
 ```
 
+## Scheduled Execution
+
+The application can be set up to run automatically at regular intervals using one of the following methods:
+
+### Option 1: System Crontab (Recommended)
+
+Use the system's crontab to run the script every 2 hours:
+
+1. Use the provided shell script:
+```bash
+./run_wallet_monitor.sh
+```
+
+2. Set up a crontab entry:
+```bash
+crontab -e
+```
+
+Add the line:
+```
+0 */2 * * * /full/path/to/wallet-monitoring/run_wallet_monitor.sh
+```
+
+See [CRONTAB_SETUP.md](CRONTAB_SETUP.md) for detailed instructions.
+
+### Option 2: Python Scheduler
+
+Use the included Python scheduler for a more integrated approach:
+
+```bash
+python scheduler.py --run-now
+```
+
+The scheduler can be configured with different intervals and can be run as a background service.
+
+See [SCHEDULER_GUIDE.md](SCHEDULER_GUIDE.md) for detailed instructions.
+
 ## Database Schema
 
 The application uses three tables:
