@@ -38,6 +38,8 @@ class TokenEntityManager:
             name VARCHAR(255) NOT NULL,
             symbol VARCHAR(50) NOT NULL,
             price NUMERIC(30, 10) NOT NULL,
+            price_24h_change NUMERIC(30, 10),
+            image_url VARCHAR(255),
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """
@@ -91,13 +93,15 @@ class TokenEntityManager:
         
         # Insert or update token
         query = f"""
-        INSERT INTO {self.table_name} (token_id, name, symbol, price)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO {self.table_name} (token_id, name, symbol, price, price_24h_change, image_url)
+        VALUES (%s, %s, %s, %s, %s, %s)
         ON CONFLICT (token_id) 
         DO UPDATE SET 
             name = EXCLUDED.name,
             symbol = EXCLUDED.symbol,
             price = EXCLUDED.price,
+            price_24h_change = EXCLUDED.price_24h_change,
+            image_url = EXCLUDED.image_url,
             updated_at = CURRENT_TIMESTAMP;
         """
         
@@ -106,7 +110,9 @@ class TokenEntityManager:
                 token_data['token_id'],
                 token_data['name'],
                 token_data['symbol'],
-                token_data['price']
+                token_data['price'],
+                token_data['price_24h_change'],
+                token_data['image_url']
             )
             
             self.db.execute_query(query, params)
@@ -127,7 +133,7 @@ class TokenEntityManager:
             Optional[Dict]: Token data or None if not found
         """
         query = f"""
-        SELECT token_id, name, symbol, price, updated_at
+        SELECT token_id, name, symbol, price, price_24h_change, image_url, updated_at
         FROM {self.table_name}
         WHERE token_id = %s;
         """
@@ -144,7 +150,9 @@ class TokenEntityManager:
                 'name': row[1],
                 'symbol': row[2],
                 'price': float(row[3]),
-                'updated_at': row[4]
+                'price_24h_change': float(row[4]),
+                'image_url': row[5],
+                'updated_at': row[6]
             }
         except Exception as e:
             logger.error(f"Error retrieving token data: {e}")
@@ -158,7 +166,7 @@ class TokenEntityManager:
             List[Dict]: List of token data dictionaries
         """
         query = f"""
-        SELECT token_id, name, symbol, price, updated_at
+        SELECT token_id, name, symbol, price, price_24h_change, image_url, updated_at
         FROM {self.table_name}
         ORDER BY name;
         """
@@ -174,7 +182,9 @@ class TokenEntityManager:
                     'name': row[1],
                     'symbol': row[2],
                     'price': float(row[3]),
-                    'updated_at': row[4]
+                    'price_24h_change': float(row[4]),
+                    'image_url': row[5],
+                    'updated_at': row[6]
                 })
             
             return tokens

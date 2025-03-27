@@ -37,7 +37,7 @@ class TokenAccountManager:
             token_id SERIAL PRIMARY KEY,
             wallet_address TEXT NOT NULL,
             token_mint VARCHAR(255) NOT NULL,
-            balance BIGINT NOT NULL,
+            balance NUMERIC(38,0) NOT NULL,
             last_updated TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             symbol TEXT,
             decimals INTEGER,
