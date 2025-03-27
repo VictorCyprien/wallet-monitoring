@@ -16,7 +16,7 @@ A simplified Python-based clone of the Insider-Monitor tool that:
 - 💾 Store token data in PostgreSQL database
 - 📊 Retrieve token info from Dexscreener API
 - 🔄 Update token data when changes are detected
-- 🔁 Built-in retry mechanism for Solana RPC with configurable delay
+- 🔁 Built-in retry mechanism for Solana RPC and Dexscreener API with configurable delay
 - 🧹 Automatic cleanup of tokens no longer present in wallets
 - 🔗 Maintains relationships between wallets and their tokens
 
