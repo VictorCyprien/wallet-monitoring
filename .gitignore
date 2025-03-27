@@ -176,3 +176,4 @@ cython_debug/
 .cursor/
 .specstory
 .DS_Store
+.scripts/update_structure.sh
