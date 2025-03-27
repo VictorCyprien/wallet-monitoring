@@ -71,9 +71,6 @@ def main():
                 # Add to current tokens list
                 current_token_mints.append(token_mint)
                 
-                # Calculate raw balance (convert from UI amount to raw amount)
-                raw_balance = int(token_balance * (10 ** token_decimals))
-                
                 # Check if token exists in database
                 if not token_manager.token_exists(token_mint):
                     logger.info(f"Token {token_mint} not found in database, fetching from Dexscreener")
@@ -93,7 +90,7 @@ def main():
                         token_account = {
                             'wallet_address': wallet_address,
                             'token_mint': token_mint,
-                            'balance': raw_balance,
+                            'balance': token_balance,
                             'symbol': token_symbol,
                             'decimals': token_decimals
                         }
@@ -117,7 +114,7 @@ def main():
                         token_account = {
                             'wallet_address': wallet_address,
                             'token_mint': token_mint,
-                            'balance': raw_balance,
+                            'balance': token_balance,
                             'symbol': token_symbol,
                             'decimals': token_decimals
                         }
