@@ -17,6 +17,9 @@ class SolanaWallet:
     Class for interacting with Solana blockchain to retrieve wallet token data.
     """
     
+    # Wrapped SOL token address (used for representing native SOL)
+    WRAPPED_SOL_ADDRESS = "So11111111111111111111111111111111111111112"
+    
     def __init__(self):
         """Initialize Solana RPC client."""
         self.rpc_url = os.getenv('SOLANA_RPC_URL', 'https://api.mainnet-beta.solana.com')
@@ -86,6 +89,41 @@ class SolanaWallet:
         logger.error(f"All retry attempts failed. Last error: {last_error}")
         return {}
     
+    def get_sol_balance(self, wallet_address: str) -> float:
+        """
+        Get the native SOL balance of a wallet.
+        
+        Args:
+            wallet_address (str): Solana wallet address
+            
+        Returns:
+            float: SOL balance in SOL units (not lamports)
+        """
+        # Build Solana RPC request for getBalance
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getBalance",
+            "params": [
+                wallet_address
+            ]
+        }
+        
+        result = self._make_rpc_request(payload)
+        
+        if not result or 'result' not in result:
+            logger.error(f"Failed to get SOL balance for wallet {wallet_address}")
+            return 0.0
+        
+        # Extract balance in lamports
+        lamports = result.get('result', {}).get('value', 0)
+        
+        # Convert lamports to SOL (1 SOL = 10^9 lamports)
+        sol_balance = lamports / 1_000_000_000
+        
+        logger.info(f"SOL balance for wallet {wallet_address}: {sol_balance} SOL")
+        return sol_balance
+    
     def get_tokens(self, wallet_address: str) -> List[Dict[str, Any]]:
         """
         Get all token accounts for a wallet address.
@@ -96,6 +134,21 @@ class SolanaWallet:
         Returns:
             List[Dict]: List of token information dictionaries
         """
+        tokens = []
+        
+        # Get native SOL balance
+        sol_balance = self.get_sol_balance(wallet_address)
+        
+        # Only add SOL if there's a non-zero balance
+        if sol_balance > 0:
+            tokens.append({
+                'token_id': self.WRAPPED_SOL_ADDRESS,  # Use wrapped SOL address for compatibility
+                'amount': sol_balance,
+                'decimals': 9,  # SOL has 9 decimals
+                'is_native_sol': True  # Flag to indicate this is native SOL
+            })
+            logger.info(f"Added native SOL token with balance {sol_balance} SOL")
+        
         # Build Solana RPC request for getTokenAccountsByOwner
         payload = {
             "jsonrpc": "2.0",
@@ -116,14 +169,13 @@ class SolanaWallet:
         
         if not result or 'result' not in result:
             logger.error(f"Failed to get tokens for wallet {wallet_address}")
-            return []
+            return tokens  # Still return any SOL balance we found
         
         # Extract token accounts from response
         token_accounts = result.get('result', {}).get('value', [])
         logger.info(f"Found {len(token_accounts)} token accounts for wallet {wallet_address}")
         
         # Format token information
-        tokens = []
         for account in token_accounts:
             try:
                 token_data = account.get('account', {}).get('data', {}).get('parsed', {}).get('info', {})
@@ -135,6 +187,12 @@ class SolanaWallet:
                 # Extract token mint address (contract address)
                 token_id = token_data.get('mint')
                 if not token_id:
+                    continue
+                
+                # Skip wrapped SOL if we already added native SOL
+                # This avoids double-counting SOL
+                if token_id == self.WRAPPED_SOL_ADDRESS and any(t.get('is_native_sol', False) for t in tokens):
+                    logger.info(f"Skipping wrapped SOL token as native SOL is already included")
                     continue
                 
                 # Get token amount and decimals
@@ -163,6 +221,15 @@ class SolanaWallet:
         Returns:
             Dict: Token metadata or empty dict if not found
         """
+        # Handle special case for wrapped SOL
+        if token_id == self.WRAPPED_SOL_ADDRESS:
+            return {
+                'token_id': token_id,
+                'decimals': 9,
+                'name': 'Solana',
+                'symbol': 'SOL'
+            }
+            
         # Build Solana RPC request for getAccountInfo
         payload = {
             "jsonrpc": "2.0",

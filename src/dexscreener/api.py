@@ -9,6 +9,7 @@ import requests
 from requests.exceptions import RequestException
 
 from src.logger.logger import Logger
+from src.solana.wallet import SolanaWallet
 
 logger = Logger()
 
@@ -29,6 +30,39 @@ class DexscreenerAPI:
     def get_token_data(self, token_id: str) -> Optional[Dict[str, Any]]:
         """
         Get token data from Dexscreener.
+        
+        Args:
+            token_id (str): Token contract address
+            
+        Returns:
+            Optional[Dict]: Token data dictionary or None if not found
+        """
+        # Special case for SOL token
+        if token_id == SolanaWallet.WRAPPED_SOL_ADDRESS:
+            # For SOL, we can get the price from a reliable source or hardcode it
+            # Here we'll still try to get it from Dexscreener but return a fallback if not available
+            logger.info("Getting data for native SOL token")
+            
+            # Try to get SOL price from Dexscreener
+            sol_data = self._get_dexscreener_data(token_id)
+            if sol_data:
+                return sol_data
+            
+            # If Dexscreener data is not available, use a fallback
+            logger.info("Using fallback data for SOL token")
+            return {
+                'token_id': token_id,
+                'name': 'Solana',
+                'symbol': 'SOL',
+                'price': 0.0  # We don't have a price without Dexscreener
+            }
+            
+        # For all other tokens, use the standard Dexscreener API
+        return self._get_dexscreener_data(token_id)
+    
+    def _get_dexscreener_data(self, token_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get token data from Dexscreener API.
         
         Args:
             token_id (str): Token contract address
@@ -65,11 +99,15 @@ class DexscreenerAPI:
                     if base_token.get('address') == token_id:
                         # Format token data for storage
                         price_usd = pair.get('priceUsd', 0)
+                        price_usd_24h_change = pair.get('priceChange', {}).get('h24', 0)
+                        token_image = pair.get('info', {}).get('imageUrl', None)
                         token_data = {
                             'token_id': token_id,
                             'name': base_token.get('name', 'Unknown'),
                             'symbol': base_token.get('symbol', 'UNKNOWN'),
-                            'price': float(price_usd) if price_usd else 0
+                            'price': float(price_usd) if price_usd else 0,
+                            'price_24h_change': float(price_usd_24h_change) if price_usd_24h_change else 0,
+                            'image_url': token_image
                         }
                         
                         logger.info(f"Retrieved data for token {token_data['name']} ({token_data['symbol']})")
