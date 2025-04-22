@@ -41,7 +41,7 @@ class TokenAccountManager:
             last_updated TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             symbol TEXT,
             decimals INTEGER,
-            UNIQUE(wallet_address, token_mint)
+            CONSTRAINT unique_wallet_token UNIQUE(wallet_address, token_mint)
         );
         """
         
@@ -76,7 +76,7 @@ class TokenAccountManager:
             INSERT INTO {self.table_name} 
             (wallet_address, token_mint, balance, symbol, decimals)
             VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (wallet_address, token_mint) 
+            ON CONFLICT ON CONSTRAINT unique_wallet_token 
             DO UPDATE SET 
                 balance = EXCLUDED.balance,
                 symbol = EXCLUDED.symbol,

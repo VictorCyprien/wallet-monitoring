@@ -9,6 +9,7 @@ A simplified Python-based clone of the Insider-Monitor tool that:
 5. Fetches and saves token data from Dexscreener
 6. Maintains token account relationships between wallets and tokens
 7. Automatically removes tokens that are no longer in wallets
+8. Provides a secure API endpoint to query tokens for specific wallets
 
 ## Features
 
@@ -20,12 +21,14 @@ A simplified Python-based clone of the Insider-Monitor tool that:
 - 🧹 Automatic cleanup of tokens no longer present in wallets
 - 🔗 Maintains relationships between wallets and their tokens
 - 🪙 Includes native SOL balances alongside SPL tokens
+- 🔒 Secure API with localhost-only access for retrieving wallet tokens
 
 ## Requirements
 
 - Python 3.8+
 - PostgreSQL database
 - Internet connection to access Solana RPC and Dexscreener API
+- Nginx (optional, for API endpoint security)
 
 ## Installation
 
@@ -95,9 +98,30 @@ INSERT INTO wallets_to_monitor (wallet_address) VALUES ('YOUR_SOLANA_WALLET_ADDR
 
 ## Usage
 
+### Batch Processing
+
 Run the application to process all wallets in the database:
 ```bash
 python main.py
+```
+
+### API Server
+
+Run the API server to access token data for specific wallets:
+```bash
+./run_api.sh
+```
+
+Or set it up as a systemd service for production use (see [NGINX_SETUP.md](NGINX_SETUP.md)).
+
+#### API Endpoints
+
+- `GET /` - Health check endpoint
+- `GET /wallet/{wallet_address}/tokens` - Get all tokens for a specific wallet
+
+Example:
+```bash
+curl http://localhost:8000/wallet/YOUR_SOLANA_WALLET_ADDRESS/tokens
 ```
 
 ## Scheduled Execution
@@ -136,6 +160,16 @@ python scheduler.py --run-now
 The scheduler can be configured with different intervals and can be run as a background service.
 
 See [SCHEDULER_GUIDE.md](SCHEDULER_GUIDE.md) for detailed instructions.
+
+## Security
+
+The API is configured to run on localhost only and can be further secured with Nginx:
+
+1. The API server binds only to 127.0.0.1 by default
+2. Nginx can be configured to restrict access to localhost only
+3. Additional security headers are included in the Nginx configuration
+
+See [NGINX_SETUP.md](NGINX_SETUP.md) for detailed instructions on setting up the secure API with Nginx.
 
 ## Database Schema
 
@@ -179,9 +213,14 @@ CREATE TABLE token_accounts (
 ```
 wallet-monitoring/
 ├── main.py              # Main application entry point
+├── api.py               # API server for token data access
+├── run_api.sh           # Script to run the API server
 ├── requirements.txt     # Python dependencies
 ├── .env.example         # Example environment variables
 ├── README.md            # This file
+├── NGINX_SETUP.md       # Nginx configuration guide
+├── wallet-monitor-api.nginx.conf  # Nginx configuration file
+├── wallet-monitor-api.service     # Systemd service file
 └── src/                 # Source code
     ├── db/              # Database related modules
     │   ├── __init__.py
@@ -218,6 +257,8 @@ MIT
 
 5. **Token Cleanup**: After processing each wallet, it automatically removes token accounts that are no longer present in the wallet.
 
+6. **API Access**: Individual wallet token data can be accessed via the API endpoint with localhost-only security.
+
 ## Key Implementation Details
 
 - **Retry Mechanism**: Solana RPC calls automatically retry up to 3 times with a 5-second delay between attempts
@@ -225,3 +266,4 @@ MIT
 - **Foreign Keys**: Token accounts reference token entities to maintain data integrity
 - **UPSERT Operations**: Token accounts are updated if they exist or inserted if they don't
 - **Native SOL Support**: Both native SOL and SPL tokens are tracked, with native SOL represented using the wrapped SOL address
+- **API Security**: Multiple security layers prevent unauthorized access to the API endpoint

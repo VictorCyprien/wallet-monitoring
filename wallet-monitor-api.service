@@ -1,0 +1,21 @@
+[Unit]
+Description=Wallet Monitor API
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/path/to/wallet-monitoring
+ExecStart=/path/to/wallet-monitoring/venv/bin/uvicorn api:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+Environment="PATH=/path/to/wallet-monitoring/venv/bin"
+
+# Security measures
+PrivateTmp=true
+ProtectSystem=full
+NoNewPrivileges=true
+ProtectHome=true
+PrivateDevices=true
+
+[Install]
+WantedBy=multi-user.target 
