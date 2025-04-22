@@ -1,41 +1,46 @@
 # Python Scheduler for Wallet Monitor
 
-This guide explains how to use the Python scheduler to run the wallet monitor script at regular intervals.
+This guide explains how to use the Python scheduler to run the wallet monitor and token price updater scripts at regular intervals.
 
 ## Overview
 
 The Python scheduler (`scheduler.py`) is an alternative to system crontab and provides:
 
-- Continuous operation with configurable intervals
+- Continuous operation with configurable intervals for both wallet monitoring and token price updating
 - Built-in logging
 - Immediate feedback
 - Cross-platform support
 
 ## Basic Usage
 
-Run the scheduler with the default 2-hour interval:
+Run the scheduler with the default intervals (wallet monitor every 2 hours, token prices every 30 minutes):
 
 ```bash
 python scheduler.py
 ```
 
-This will start the scheduler, which will run the wallet monitor every 2 hours.
+This will start the scheduler, which will run the wallet monitor every 2 hours and the token price updater every 30 minutes.
 
-## Running the Monitor Immediately
+## Running Both Monitors Immediately
 
-To run the wallet monitor immediately and then follow the regular schedule:
+To run both the wallet monitor and token price updater immediately and then follow the regular schedule:
 
 ```bash
 python scheduler.py --run-now
 ```
 
-## Customizing the Interval
+## Customizing the Intervals
 
-To change the interval from the default 2 hours:
+To change the intervals from the defaults:
 
 ```bash
-python scheduler.py --interval 60  # Run every 60 minutes
+# Run wallet monitor every 60 minutes and token price updater every 15 minutes
+python scheduler.py --monitor-interval 60 --price-interval 15
 ```
+
+You can customize either or both of these parameters:
+- `--monitor-interval`: How often to run the wallet monitor (in minutes, default: 120)
+- `--price-interval`: How often to run the token price updater (in minutes, default: 30)
 
 ## Running as a Background Service
 
@@ -57,7 +62,7 @@ After=network.target
 [Service]
 User=<your-username>
 WorkingDirectory=/full/path/to/wallet-monitoring
-ExecStart=/full/path/to/wallet-monitoring/venv/bin/python scheduler.py --run-now
+ExecStart=/full/path/to/wallet-monitoring/venv/bin/python scheduler.py --monitor-interval 120 --price-interval 30 --run-now
 Restart=always
 RestartSec=10
 
@@ -96,6 +101,10 @@ nano ~/Library/LaunchAgents/com.user.wallet-monitor.plist
     <array>
         <string>/full/path/to/wallet-monitoring/venv/bin/python</string>
         <string>/full/path/to/wallet-monitoring/scheduler.py</string>
+        <string>--monitor-interval</string>
+        <string>120</string>
+        <string>--price-interval</string>
+        <string>30</string>
         <string>--run-now</string>
     </array>
     <key>RunAtLoad</key>

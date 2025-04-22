@@ -154,10 +154,13 @@ See [CRONTAB_SETUP.md](CRONTAB_SETUP.md) for detailed instructions.
 Use the included Python scheduler for a more integrated approach:
 
 ```bash
-python scheduler.py --run-now
+python scheduler.py --monitor-interval 120 --price-interval 30 --run-now
 ```
 
-The scheduler can be configured with different intervals and can be run as a background service.
+The scheduler can be configured with different intervals for both the wallet monitor and token price updater, and can be run as a background service.
+- `--monitor-interval`: How often to run the wallet monitor (default: 120 minutes)
+- `--price-interval`: How often to run the token price updater (default: 30 minutes)
+- `--run-now`: Run both scripts immediately, then follow schedule
 
 See [SCHEDULER_GUIDE.md](SCHEDULER_GUIDE.md) for detailed instructions.
 
