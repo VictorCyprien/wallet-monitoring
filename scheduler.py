@@ -11,6 +11,10 @@ import os
 import sys
 from datetime import datetime
 import argparse
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -35,7 +39,8 @@ def run_wallet_monitor():
         result = subprocess.run(
             [sys.executable, main_script],
             capture_output=True,
-            text=True
+            text=True,
+            env=os.environ.copy()  # Pass current environment variables including those from .env
         )
         
         if result.returncode == 0:
@@ -63,7 +68,8 @@ def run_token_price_updater():
         result = subprocess.run(
             [sys.executable, updater_script],
             capture_output=True,
-            text=True
+            text=True,
+            env=os.environ.copy()  # Pass current environment variables including those from .env
         )
         
         if result.returncode == 0:
